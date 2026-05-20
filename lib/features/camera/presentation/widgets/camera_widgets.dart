@@ -3,17 +3,23 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../domain/camera_state.dart';
 
 /// Animated capture button with pulsing ring.
 class CaptureButton extends StatelessWidget {
-  const CaptureButton({super.key, required this.onPressed});
+  const CaptureButton({
+    super.key,
+    required this.onPressed,
+    this.isCapturing = false,
+  });
 
   final VoidCallback onPressed;
+  final bool isCapturing;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onPressed,
+      onTap: isCapturing ? null : onPressed,
       child: SizedBox(
         width: AppSizes.captureButtonOuter,
         height: AppSizes.captureButtonOuter,
@@ -32,15 +38,25 @@ class CaptureButton extends StatelessWidget {
                 .animate(onPlay: (c) => c.repeat(reverse: true))
                 .scaleXY(begin: 1.0, end: 1.08, duration: 1200.ms),
 
-            // Inner filled circle
-            Container(
-              width: AppSizes.captureButtonInner,
-              height: AppSizes.captureButtonInner,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
+            // Inner filled circle or spinner
+            if (isCapturing)
+              const SizedBox(
+                width: AppSizes.captureButtonInner,
+                height: AppSizes.captureButtonInner,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
+              )
+            else
+              Container(
+                width: AppSizes.captureButtonInner,
+                height: AppSizes.captureButtonInner,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -48,27 +64,32 @@ class CaptureButton extends StatelessWidget {
   }
 }
 
-/// Flash toggle cycling through off → on → auto.
-class FlashToggle extends StatefulWidget {
-  const FlashToggle({super.key});
+/// Flash toggle button — displays current mode, calls onToggle.
+class FlashToggleButton extends StatelessWidget {
+  const FlashToggleButton({
+    super.key,
+    required this.mode,
+    required this.onToggle,
+  });
 
-  @override
-  State<FlashToggle> createState() => _FlashToggleState();
-}
+  final FlashMode mode;
+  final VoidCallback onToggle;
 
-class _FlashToggleState extends State<FlashToggle> {
-  int _mode = 0; // 0=off, 1=on, 2=auto
-  static const _icons = [
-    Icons.flash_off_rounded,
-    Icons.flash_on_rounded,
-    Icons.flash_auto_rounded,
-  ];
-  static const _labels = ['Off', 'On', 'Auto'];
+  static const _icons = {
+    FlashMode.off: Icons.flash_off_rounded,
+    FlashMode.on: Icons.flash_on_rounded,
+    FlashMode.auto: Icons.flash_auto_rounded,
+  };
+  static const _labels = {
+    FlashMode.off: 'Off',
+    FlashMode.on: 'On',
+    FlashMode.auto: 'Auto',
+  };
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => setState(() => _mode = (_mode + 1) % 3),
+      onTap: onToggle,
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSizes.sm,
@@ -81,10 +102,10 @@ class _FlashToggleState extends State<FlashToggle> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(_icons[_mode], color: Colors.white, size: 20),
+            Icon(_icons[mode], color: Colors.white, size: 20),
             const SizedBox(width: 4),
             Text(
-              _labels[_mode],
+              _labels[mode] ?? 'Off',
               style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
           ],
